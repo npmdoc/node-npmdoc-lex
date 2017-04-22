@@ -1,0 +1,270 @@
+<div class="apidocDiv">
+<style>
+/*csslint
+*/
+.apidocDiv {
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.apidocDiv a[href] {
+    color: #33f;
+    font-weight: bold;
+    text-decoration: none;
+}
+.apidocDiv a[href]:hover {
+    text-decoration: underline;
+}
+.apidocCodeCommentSpan {
+    background: #bbf;
+    color: #000;
+    display: block;
+}
+.apidocCodeKeywordSpan {
+    color: #d00;
+    font-weight: bold;
+}
+.apidocCodePre {
+    background: #eef;
+    border: 1px solid;
+    color: #777;
+    padding: 5px;
+    white-space: pre-wrap;
+}
+.apidocFooterDiv {
+    margin-top: 20px;
+    text-align: center;
+}
+.apidocModuleLi {
+    margin-top: 10px;
+}
+.apidocSectionDiv {
+    border-top: 1px solid;
+    margin-top: 20px;
+}
+.apidocSignatureSpan {
+    color: #777;
+    font-weight: bold;
+}
+</style>
+<h1>api documentation for
+    <a
+
+        href="https://github.com/aaditmshah/lexer"
+
+    >lex (v1.7.9)</a>
+</h1>
+<h4>An elegant armor-plated JavaScript lexer modelled after flex. Easily extensible to tailor to your need for perfection.</h4>
+<div class="apidocSectionDiv"><a
+    href="#apidoc.tableOfContents"
+    id="apidoc.tableOfContents"
+><h1>table of contents</h1></a><ol>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.lex">module lex</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.lex.lex">
+            function <span class="apidocSignatureSpan"></span>lex
+            <span class="apidocSignatureSpan">(defunct)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.lex.defunct">
+            function <span class="apidocSignatureSpan">lex.</span>defunct
+            <span class="apidocSignatureSpan">(chr)</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+</ol></div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.lex" id="apidoc.module.lex">module lex</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.lex.lex" id="apidoc.element.lex.lex">
+        function <span class="apidocSignatureSpan"></span>lex
+        <span class="apidocSignatureSpan">(defunct)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function Lexer(defunct) {
+    if (typeof defunct !== &#x22;function&#x22;) defunct = Lexer.defunct;
+
+    var tokens = [];
+    var rules = [];
+    var remove = 0;
+    this.state = 0;
+    this.index = 0;
+    this.input = &#x22;&#x22;;
+
+    this.addRule = function (pattern, action, start) {
+        var global = pattern.global;
+
+        if (!global) {
+            var flags = &#x22;g&#x22;;
+            if (pattern.multiline) flags += &#x22;m&#x22;;
+            if (pattern.ignoreCase) flags += &#x22;i&#x22;;
+            pattern = new RegExp(pattern.source, flags);
+        }
+
+        if (Object.prototype.toString.call(start) !== &#x22;[object Array]&#x22;) start = [0];
+
+        rules.push({
+            pattern: pattern,
+            global: global,
+            action: action,
+            start: start
+        });
+
+        return this;
+    };
+
+    this.setInput = function (input) {
+        remove = 0;
+        this.state = 0;
+        this.index = 0;
+        tokens.length = 0;
+        this.input = input;
+        return this;
+    };
+
+    this.lex = function () {
+        if (tokens.length) return tokens.shift();
+
+        this.reject = true;
+
+        while (this.index &#x3c;= this.input.length) {
+            var matches = scan.call(this).splice(remove);
+            var index = this.index;
+
+            while (matches.length) {
+                if (this.reject) {
+                    var match = matches.shift();
+                    var result = match.result;
+                    var length = match.length;
+                    this.index += length;
+                    this.reject = false;
+                    remove++;
+
+                    var token = match.action.apply(this, result);
+                    if (this.reject) this.index = result.index;
+                    else if (typeof token !== &#x22;undefined&#x22;) {
+                        switch (Object.prototype.toString.call(token)) {
+                        case &#x22;[object Array]&#x22;:
+                            tokens = token.slice(1);
+                            token = token[0];
+                        default:
+                            if (length) remove = 0;
+                            return token;
+                        }
+                    }
+                } else break;
+            }
+
+            var input = this.input;
+
+            if (index &#x3c; input.length) {
+                if (this.reject) {
+                    remove = 0;
+                    var token = defunct.call(this, input.charAt(this.index++));
+                    if (typeof token !== &#x22;undefined&#x22;) {
+                        if (Object.prototype.toString.call(token) === &#x22;[object Array]&#x22;) {
+                            tokens = token.slice(1);
+                            return token[0];
+                        } else return token;
+                    }
+                } else {
+                    if (this.index !== index) remove = 0;
+                    this.reject = true;
+                }
+            } else if (matches.length)
+                this.reject = true;
+            else break;
+        }
+    };
+
+    function scan() {
+        var matches = [];
+        var index = 0;
+
+        var state = this.state;
+        var lastIndex = this.index;
+        var input = this.input;
+
+        for (var i = 0, length = rules.length; i &#x3c; length; i++) {
+            var rule = rules[i];
+            var start = rule.start;
+            var states = start.length;
+
+            if ((!states || start.indexOf(state) &#x3e;= 0) ||
+                (state % 2 &#x26;&#x26; states === 1 &#x26;&#x26; !start[0])) {
+                var pattern = rule.pattern;
+                pattern.lastIndex = lastIndex;
+                var result = pattern.exec(input);
+
+                if (result &#x26;&#x26; result.index === lastIndex) {
+                    var j = matches.push({
+                        result: result,
+                        action: rule.action,
+                        length: result[0].length
+                    });
+
+                    if (rule.global) index = j;
+
+                    while (--j &#x3e; index) {
+                        var k = j - 1;
+
+                        if (matches[j].length &#x3e; matches[k].length) {
+                            var temple = ma ...</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+var chars = 0;
+
+(new Lexer).addRule(/\n/, function () {
+    lines++;
+    chars++;
+}).addRule(/./, function () {
+    chars++;
+}).setInput(&#x22;Hello World!&#x22;).<span class="apidocCodeKeywordSpan">lex</span>();
+```
+
+If the lexer can&#x27;t match any pattern then it executes the default rule which matches the next character in the input string
+. The default action may be specified as an argument to the constructor. Setting the property `reject` on the `this` object in an
+ action to `true` tells the lexer to reject the current rule and match the next best rule.
+
+```javascript
+var row = 1;
+var col = 1;
+...</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.lex.defunct" id="apidoc.element.lex.defunct">
+        function <span class="apidocSignatureSpan">lex.</span>defunct
+        <span class="apidocSignatureSpan">(chr)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">defunct = function (chr) {
+    throw new Error(&#x22;Unexpected character at index &#x22; + (this.index - 1) + &#x22;: &#x22; + chr);
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocFooterDiv">
+    [ this document was created with
+    <a href="https://github.com/kaizhu256/node-utility2" target="_blank">utility2</a>
+    ]
+</div>
+</div>
